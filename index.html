@@ -250,7 +250,7 @@
     <div class="container">
         <div class="loading-overlay" id="loadingOverlay">雲端同步中...</div>
 
-        <h2>妞寶 雲端集點板</h2>
+        <h2>妞寶 雲端集點板 (張偉斌設計)</h2>
         
         <div class="score-display">
             <div class="score-title">CURRENT POINTS</div>
@@ -305,7 +305,7 @@
         let logs = [];
         
         // 罐頭語常用語清單（仍保存在本地快取，以便家長隨時依照自己的手機習慣客製化）
-        let defaultTags = ["有練小提琴", "寫完作業", "幫忙做家事", "主動閱讀", "收拾玩具", "吵架講不聽"];
+        let defaultTags = ["有練小提琴", "快速寫完作業", "幫忙做家事", "有背單字", "有收拾玩具", "吵架講不聽", "10點前去睡覺"];
         let templates = JSON.parse(localStorage.getItem('kid_templates')) || defaultTags;
 
         const totalPointsEl = document.getElementById('totalPoints');
