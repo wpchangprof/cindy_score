@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>妞寶 好棒棒集點星</title>
+    <style>
+        /* 基礎重設與 Stripe/極簡風格融合 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #f6f9fc;
+            color: #333333;
+            margin: 0;
+            padding: 20px 16px;
+            display: flex;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            background: #ffffff;
+            padding: 30px 24px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(50, 50, 93, 0.05), 0 5px 15px rgba(0, 0, 0, 0.03);
+            text-align: center;
+            position: relative;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            color: #111111;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        /* 載入中遮罩（處理網路延遲） */
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            color: #635bff;
+            z-index: 10;
+            font-size: 16px;
+        }
+
+        /* 大字體點數顯示區 */
+        .score-display {
+            background: #0a2540;
+            color: #635bff;
+            padding: 20px;
+            border-radius: 16px;
+            margin: 20px 0;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .score-title {
+            font-size: 14px;
+            color: #adbdcc;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .score-number {
+            font-size: 80px;
+            font-weight: 900;
+            color: #00d4b6;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 表單區塊 */
+        .form-section {
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .form-section label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #6a7c92;
+            margin-bottom: 8px;
+        }
+
+        .custom-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #e6ebf1;
+            border-radius: 10px;
+            font-size: 16px;
+            background-color: #f8fafc;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        .custom-input:focus {
+            border-color: #635bff;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.1);
+        }
+
+        /* 罐頭語常用標籤區 */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .tag {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .tag:hover { background-color: #e2e8f0; color: #1e293b; }
+
+        .manage-tags-btn {
+            font-size: 12px;
+            color: #635bff;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        /* 自訂增減點數 */
+        .custom-action-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-custom {
+            flex: 1;
+            padding: 12px 0;
+            font-size: 14px;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+            transition: all 0.15s;
+        }
+
+        .btn-custom-plus { background: #24b47e; }
+        .btn-custom-minus { background: #e25950; }
+        .btn-custom:active { transform: scale(0.97); }
+
+        .divider {
+            height: 1px;
+            background-color: #e6ebf1;
+            margin: 25px 0 20px 0;
+        }
+
+        /* 快捷按鈕群組 */
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            color: white;
+        }
+
+        .btn-plus { background: linear-gradient(180deg, #24b47e 0%, #1da16f 100%); box-shadow: 0 4px 6px rgba(36, 180, 126, 0.15); }
+        .btn-minus { background: linear-gradient(180deg, #e25950 0%, #d6453b 100%); box-shadow: 0 4px 6px rgba(226, 89, 80, 0.15); }
+        .btn-plus:active, .btn-minus:active { transform: scale(0.95); }
+
+        /* 歷史紀錄區 */
+        .history-section {
+            text-align: left;
+            margin-top: 25px;
+            border-top: 1px solid #e6ebf1;
+            padding-top: 20px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .history-title { font-size: 15px; font-weight: 700; color: #334155; }
+        
+        .btn-refresh {
+            font-size: 12px;
+            background: none;
+            border: none;
+            color: #635bff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+
+        .history-item:last-child { border-bottom: none; }
+        .hist-info { display: flex; flex-direction: column; }
+        .hist-reason { color: #1e293b; font-weight: 600; }
+        .hist-time { color: #94a3b8; font-size: 11px; margin-top: 1px; }
+        .hist-change { font-weight: 700; font-size: 15px; }
+        .change-plus { color: #24b47e; }
+        .change-minus { color: #e25950; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="loading-overlay" id="loadingOverlay">雲端同步中...</div>
+
+        <h2>妞寶 雲端集點板</h2>
+        
+        <div class="score-display">
+            <div class="score-title">CURRENT POINTS</div>
+            <div class="score-number" id="totalPoints">0</div>
+        </div>
+
+        <div class="form-section">
+            <label for="noteInput">為什麼調整點數？</label>
+            <input type="text" id="noteInput" class="custom-input" placeholder="請輸入備註或點選下方常用語..." autocomplete="off">
+            <div class="tags-container" id="tagsContainer"></div>
+            <button class="manage-tags-btn" onclick="manageTags()">+ 新增/管理常用語</button>
+        </div>
+
+        <div class="form-section">
+            <label for="customAmountInput">自訂調整點數</label>
+            <input type="number" id="customAmountInput" class="custom-input" placeholder="輸入點數數字" min="1">
+            <div class="custom-action-row">
+                <button class="btn-custom btn-custom-plus" onclick="adjustCustomPoints(true)">+ 自訂加點</button>
+                <button class="btn-custom btn-custom-minus" onclick="adjustCustomPoints(false)">- 自訂扣點</button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="btn-group">
+            <div class="btn-row">
+                <button class="btn btn-plus" onclick="adjustPoints(1)">+1</button>
+                <button class="btn btn-plus" onclick="adjustPoints(3)">+3</button>
+                <button class="btn btn-plus" onclick="adjustPoints(5)">+5</button>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-minus" onclick="adjustPoints(-1)">-1</button>
+                <button class="btn btn-minus" onclick="adjustPoints(-3)">-3</button>
+                <button class="btn btn-minus" onclick="adjustPoints(-5)">-5</button>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <div class="history-title">歷史變更紀錄</div>
+                <button class="btn-refresh" onclick="fetchFromCloud()">🔄 重整雲端資料</button>
+            </div>
+            <ul class="history-list" id="historyList"></ul>
+        </div>
+    </div>
+
+    <script>
+        // 您的專屬 SheetDB API 網址
+        const API_URL = "https://sheetdb.io/api/v1/eljpf0mv80npd";
+
+        let points = 0;
+        let logs = [];
+        
+        // 罐頭語常用語清單（仍保存在本地快取，以便家長隨時依照自己的手機習慣客製化）
+        let defaultTags = ["有練小提琴", "寫完作業", "幫忙做家事", "主動閱讀", "收拾玩具", "吵架講不聽"];
+        let templates = JSON.parse(localStorage.getItem('kid_templates')) || defaultTags;
+
+        const totalPointsEl = document.getElementById('totalPoints');
+        const noteInputEl = document.getElementById('noteInput');
+        const customAmountInputEl = document.getElementById('customAmountInput');
+        const tagsContainerEl = document.getElementById('tagsContainer');
+        const historyListEl = document.getElementById('historyList');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        function showLoading(status) {
+            loadingOverlay.style.display = status ? 'flex' : 'none';
+        }
+
+        // 介面本地渲染
+        function renderUI() {
+            totalPointsEl.innerText = points;
+            
+            // 1. 渲染罐頭語
+            tagsContainerEl.innerHTML = '';
+            templates.forEach(tagText => {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.innerText = tagText;
+                tag.onclick = () => { noteInputEl.value = tagText; };
+                tagsContainerEl.appendChild(tag);
+            });
+
+            // 2. 渲染歷史紀錄
+            historyListEl.innerHTML = '';
+            logs.forEach(log => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                const isPlus = log.amount > 0;
+                li.innerHTML = `
+                    <div class="hist-info">
+                        <span class="hist-reason">${log.reason}</span>
+                        <span class="hist-time">${log.time}</span>
+                    </div>
+                    <span class="hist-change ${isPlus ? 'change-plus' : 'change-minus'}">${isPlus ? '+' : ''}${log.amount}</span>
+                `;
+                historyListEl.appendChild(li);
+            });
+        }
+
+        // 🔄 從 Google Sheets 獲取最新點數與歷史紀錄
+        async function fetchFromCloud() {
+            showLoading(true);
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                if (Array.isArray(data)) {
+                    // 計算總點數（把 Excel 裡面所有 amount 加總）
+                    let total = 0;
+                    let cloudLogs = [];
+                    
+                    // 倒序排列，讓最新時間的在最上面
+                    data.reverse().forEach(row => {
+                        const amt = parseInt(row.amount) || 0;
+                        total += amt;
+                        cloudLogs.push({
+                            time: row.time || '',
+                            reason: row.reason || '',
+                            amount: amt
+                        });
+                    });
+                    
+                    points = total;
+                    logs = cloudLogs;
+                    renderUI();
+                }
+            } catch (error) {
+                console.error("雲端讀取失敗:", error);
+                alert("從雲端讀取資料失敗，請確認網路連線或 SheetDB 權限。");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // ➕ 向 Google Sheets 新增一筆紀錄
+        async function writeToCloud(amount, reason, timeStr) {
+            showLoading(true);
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        data: [
+                            {
+                                time: timeStr,
+                                reason: reason,
+                                amount: amount
+                            }
+                        ]
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.created === 1) {
+                    // 寫入成功後，重新從雲端抓取最新狀態重新計算
+                    await fetchFromCloud();
+                } else {
+                    alert("寫入失敗，雲端未接受此格式。");
+                }
+            } catch (error) {
+                console.error("雲端寫入失敗:", error);
+                alert("無法同步到 Google Sheets，請重新嘗試！");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function adjustCustomPoints(isAddition) {
+            const val = parseInt(customAmountInputEl.value);
+            if (isNaN(val) || val <= 0) { alert("請輸入有效的自訂點數！"); return; }
+            adjustPoints(isAddition ? val : -val);
+            customAmountInputEl.value = "";
+        }
+
+        function adjustPoints(amount) {
+            let reason = noteInputEl.value.trim();
+            if (reason === "") reason = amount > 0 ? "表現良好獎勵" : "不當表現扣點";
+
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            // 發送至雲端
+            writeToCloud(amount, reason, timeStr);
+            noteInputEl.value = "";
+        }
+
+        function manageTags() {
+            const action = prompt("請輸入指令：\n1. 直接輸入想增加的新常用語\n2. 輸入「刪除」來移除現有常用語");
+            if (!action) return;
+            if (action.trim() === "刪除") {
+                const removeTag = prompt(`目前常用語：[${templates.join(', ')}]\n\n請輸入想刪除的精確文字：`);
+                if (removeTag) {
+                    templates = templates.filter(t => t !== removeTag.trim());
+                    localStorage.setItem('kid_templates', JSON.stringify(templates));
+                    renderUI();
+                }
+            } else {
+                if (!templates.includes(action.trim())) {
+                    templates.push(action.trim());
+                    localStorage.setItem('kid_templates', JSON.stringify(templates));
+                    renderUI();
+                }
+            }
+        }
+
+        // 網頁開啟時，自動與 Google Sheets 進行第一次同步
+        fetchFromCloud();
+    </script>
+</body>
+</html>
